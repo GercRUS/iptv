@@ -10,279 +10,137 @@
 <title>IPTV</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { width: 100%; height: 100%; background: #000; overflow: hidden; font-family: 'Courier New', monospace; }
+  #app { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; }
+  video { width: 100%; height: 100%; object-fit: cover; background: #000; display: block; }
 
-  html, body {
-    width: 100%; height: 100%;
-    background: #000;
-    overflow: hidden;
-    font-family: 'Courier New', monospace;
-  }
-
-  #app {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: #000;
-  }
-
-  video {
-    width: 100%; height: 100%;
-    object-fit: contain;
-    background: #000;
-    display: block;
-  }
-
-  /* ─── SIDEBAR ─── */
+  /* SIDEBAR */
   #sidebar {
-    position: fixed;
-    top: 0; left: 0;
-    width: 300px;
-    height: 100%;
-    background: rgba(0,0,0,0.92);
-    border-right: 1px solid #333;
-    transform: translateX(-100%);
-    transition: transform 0.25s ease;
-    z-index: 100;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
+    position: fixed; top: 0; left: 0; width: 300px; height: 100%;
+    background: rgba(0,0,0,0.93); border-right: 1px solid #222;
+    transform: translateX(-100%); transition: transform 0.25s ease;
+    z-index: 100; display: flex; flex-direction: column; overflow: hidden;
   }
   #sidebar.open { transform: translateX(0); }
-
   #sidebar-header {
-    padding: 14px 16px 10px;
-    border-bottom: 1px solid #222;
-    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 14px; border-bottom: 1px solid #1a1a1a; flex-shrink: 0;
   }
-  #sidebar-title {
-    font-size: 11px;
-    letter-spacing: 0.15em;
-    color: #888;
-    text-transform: uppercase;
-    margin-bottom: 8px;
+  #sidebar-title { font-size: 10px; letter-spacing: 0.2em; color: #555; text-transform: uppercase; }
+  #gear-btn {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: #111; border: 1px solid #2a2a2a; color: #666; font-size: 16px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
   }
-
-  /* playlist selector */
-  #playlist-input-wrap {
-    display: flex;
-    gap: 6px;
-    align-items: center;
-    margin-bottom: 8px;
-  }
-  #playlist-url {
-    flex: 1;
-    background: #111;
-    border: 1px solid #333;
-    border-radius: 4px;
-    color: #eee;
-    font-size: 12px;
-    padding: 6px 8px;
-    outline: none;
-    font-family: inherit;
-    min-width: 0;
-  }
-  #playlist-url::placeholder { color: #555; }
-  #playlist-url:focus { border-color: #666; }
-
-  #load-btn {
-    background: #222;
-    border: 1px solid #444;
-    border-radius: 4px;
-    color: #ccc;
-    font-size: 11px;
-    padding: 6px 10px;
-    cursor: pointer;
-    white-space: nowrap;
-    font-family: inherit;
-  }
-  #load-btn:active { background: #333; }
-
-  #upload-btn {
-    width: 100%;
-    background: #111;
-    border: 1px dashed #444;
-    border-radius: 4px;
-    color: #777;
-    font-size: 11px;
-    padding: 6px;
-    cursor: pointer;
-    text-align: center;
-    font-family: inherit;
-  }
-  #upload-btn:active { color: #aaa; border-color: #666; }
-  #file-input { display: none; }
-
-  /* search */
-  #search-wrap {
-    padding: 8px 12px;
-    border-bottom: 1px solid #1a1a1a;
-    flex-shrink: 0;
-  }
+  #gear-btn:active { background: #1a1a1a; color: #aaa; }
+  #search-wrap { padding: 8px 12px; border-bottom: 1px solid #1a1a1a; flex-shrink: 0; }
   #search-input {
-    width: 100%;
-    background: #111;
-    border: 1px solid #2a2a2a;
-    border-radius: 4px;
-    color: #ddd;
-    font-size: 13px;
-    padding: 6px 10px;
-    outline: none;
-    font-family: inherit;
+    width: 100%; background: #111; border: 1px solid #222; border-radius: 4px;
+    color: #ddd; font-size: 13px; padding: 7px 10px; outline: none; font-family: inherit;
   }
   #search-input::placeholder { color: #444; }
-  #search-input:focus { border-color: #555; }
-
-  /* channel list */
-  #channel-list {
-    flex: 1;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-  }
+  #search-input:focus { border-color: #444; }
+  #channel-list { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
   #channel-list::-webkit-scrollbar { width: 3px; }
   #channel-list::-webkit-scrollbar-track { background: #111; }
   #channel-list::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
-
   .channel-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 14px;
-    cursor: pointer;
-    border-bottom: 1px solid #111;
-    transition: background 0.1s;
-    user-select: none;
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #0f0f0f; user-select: none;
   }
   .channel-item:active { background: #1a1a1a; }
   .channel-item.active { background: #1c1c1c; border-left: 3px solid #e50914; }
   .channel-item.active .ch-name { color: #fff; }
-
-  .ch-logo {
-    width: 32px; height: 22px;
-    object-fit: contain;
-    flex-shrink: 0;
-    border-radius: 2px;
-    background: #111;
-  }
+  .ch-logo { width: 32px; height: 22px; object-fit: contain; flex-shrink: 0; border-radius: 2px; background: #111; }
   .ch-logo-placeholder {
-    width: 32px; height: 22px;
-    background: #1a1a1a;
-    border-radius: 2px;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 8px;
-    color: #333;
+    width: 32px; height: 22px; background: #1a1a1a; border-radius: 2px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 8px; color: #333;
   }
+  .ch-name { font-size: 13px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; }
+  .ch-group { font-size: 10px; color: #444; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #empty-msg { padding: 24px 16px; text-align: center; color: #444; font-size: 12px; line-height: 1.8; }
 
-  .ch-name {
-    font-size: 13px;
-    color: #aaa;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    line-height: 1.3;
-  }
-  .ch-group {
-    font-size: 10px;
-    color: #444;
-    margin-top: 1px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
+  /* TOUCH ZONE */
+  #touch-zone { position: fixed; top: 0; left: 0; width: 80px; height: 100%; z-index: 50; }
 
-  /* empty / status */
-  #empty-msg {
-    padding: 24px 16px;
-    text-align: center;
-    color: #444;
-    font-size: 12px;
-    line-height: 1.8;
-  }
-
-  /* ─── TOUCH ZONE ─── */
-  #touch-zone {
-    position: fixed;
-    top: 0; left: 0;
-    width: 80px; height: 100%;
-    z-index: 50;
-  }
-
-  /* ─── STATUS BAR ─── */
+  /* STATUS */
   #status-bar {
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    padding: 8px 16px;
-    background: linear-gradient(transparent, rgba(0,0,0,0.7));
-    color: #777;
-    font-size: 11px;
-    letter-spacing: 0.05em;
-    pointer-events: none;
-    z-index: 10;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
+    position: fixed; bottom: 0; left: 0; right: 0; padding: 10px 16px;
+    background: linear-gradient(transparent, rgba(0,0,0,0.65));
+    pointer-events: none; z-index: 10; display: flex; justify-content: space-between; align-items: flex-end;
   }
-  #now-playing { color: #aaa; max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #now-playing { color: #aaa; font-size: 11px; letter-spacing: 0.05em; max-width: 70%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #ch-count { color: #555; font-size: 10px; }
 
-  /* ─── OVERLAY HINT ─── */
+  /* HINT */
   #hint {
-    position: fixed;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    color: #333;
-    font-size: 13px;
-    letter-spacing: 0.05em;
-    pointer-events: none;
-    z-index: 5;
-    line-height: 2;
+    position: fixed; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    color: #2a2a2a; font-size: 13px; letter-spacing: 0.05em; pointer-events: none; z-index: 5; line-height: 2.2;
   }
   #hint.hidden { display: none; }
 
-  /* loading spinner */
-  #spinner {
-    position: fixed;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 20;
-    pointer-events: none;
-    display: none;
-  }
-  .spin {
-    width: 32px; height: 32px;
-    border: 2px solid #333;
-    border-top-color: #e50914;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
+  /* SPINNER */
+  #spinner { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; z-index: 20; pointer-events: none; }
+  .spin { width: 32px; height: 32px; border: 2px solid #222; border-top-color: #e50914; border-radius: 50%; animation: spin 0.8s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  #overlay-close {
-    position: fixed;
-    top: 0; left: 300px; right: 0; bottom: 0;
-    z-index: 99;
-    display: none;
-  }
+  /* OVERLAY */
+  #overlay-close { position: fixed; top: 0; left: 300px; right: 0; bottom: 0; z-index: 99; display: none; }
   #sidebar.open ~ #overlay-close { display: block; }
+
+  /* MODAL */
+  #modal-bg {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.8);
+    display: none; align-items: center; justify-content: center; z-index: 200;
+  }
+  #modal-bg.open { display: flex; }
+  #modal {
+    background: #111; border: 1px solid #2a2a2a; border-radius: 12px;
+    padding: 24px 20px; width: 320px; max-width: 90vw;
+  }
+  #modal h2 { font-size: 10px; letter-spacing: 0.2em; color: #555; text-transform: uppercase; margin-bottom: 18px; font-weight: normal; }
+  .modal-btn {
+    display: block; width: 100%; padding: 13px 16px;
+    background: #1a1a1a; border: 1px solid #252525; border-radius: 7px;
+    color: #ccc; font-size: 14px; text-align: left; cursor: pointer;
+    font-family: inherit; margin-bottom: 8px;
+  }
+  .modal-btn:active { background: #222; }
+  .modal-btn .sub { display: block; font-size: 10px; color: #555; margin-top: 3px; letter-spacing: 0.02em; }
+  #modal-url-form { display: none; margin-top: 14px; }
+  #modal-url-form.show { display: block; }
+  #modal-url-input {
+    width: 100%; background: #0d0d0d; border: 1px solid #333; border-radius: 6px;
+    color: #eee; font-size: 13px; padding: 10px 12px; outline: none; font-family: inherit; margin-bottom: 8px;
+  }
+  #modal-url-input::placeholder { color: #444; }
+  #modal-url-input:focus { border-color: #555; }
+  #modal-url-go {
+    width: 100%; padding: 11px; background: #c0392b; border: none; border-radius: 6px;
+    color: #fff; font-size: 14px; cursor: pointer; font-family: inherit;
+  }
+  #modal-url-go:active { background: #a93226; }
+  #modal-cancel {
+    display: block; width: 100%; padding: 11px; margin-top: 12px;
+    background: transparent; border: 1px solid #222; border-radius: 6px;
+    color: #555; font-size: 13px; cursor: pointer; font-family: inherit; text-align: center;
+  }
+  #modal-cancel:active { color: #888; }
+  #file-input { display: none; }
 </style>
 </head>
 <body>
 
 <div id="app">
-  <video id="player" autoplay playsinline></video>
+  <video id="player" autoplay playsinline webkit-playsinline></video>
 </div>
 
 <div id="spinner"><div class="spin"></div></div>
 
 <div id="hint">
   <div>← тап слева — каналы</div>
-  <div>загрузи плейлист M3U</div>
+  <div>⚙ в шапке — настройки</div>
 </div>
 
 <div id="status-bar">
@@ -290,154 +148,224 @@
   <div id="ch-count"></div>
 </div>
 
-<!-- touch zone for sidebar -->
 <div id="touch-zone"></div>
 
-<!-- sidebar -->
 <div id="sidebar">
   <div id="sidebar-header">
-    <div id="sidebar-title">IPTV Player</div>
-    <div id="playlist-input-wrap">
-      <input id="playlist-url" type="url" placeholder="http://… URL плейлиста" autocomplete="off" autocorrect="off" spellcheck="false">
-      <button id="load-btn">Загрузить</button>
-    </div>
-    <button id="upload-btn">📂 Открыть файл M3U</button>
-    <input id="file-input" type="file" accept=".m3u,.m3u8,text/plain">
+    <div id="sidebar-title">Каналы</div>
+    <button id="gear-btn">⚙</button>
   </div>
-
   <div id="search-wrap">
-    <input id="search-input" type="search" placeholder="Поиск канала…" autocomplete="off">
+    <input id="search-input" type="search" placeholder="Поиск…" autocomplete="off">
   </div>
-
-  <div id="channel-list"><div id="empty-msg">Загрузи плейлист M3U<br>или введи URL выше</div></div>
+  <div id="channel-list"><div id="empty-msg">Загрузи плейлист через ⚙</div></div>
 </div>
 
 <div id="overlay-close"></div>
 
+<div id="modal-bg">
+  <div id="modal">
+    <h2>Настройки плейлиста</h2>
+
+    <button class="modal-btn" id="btn-url">
+      Указать ссылку
+      <span class="sub">Загрузить M3U по URL из интернета</span>
+    </button>
+
+    <button class="modal-btn" id="btn-file">
+      Открыть файл
+      <span class="sub">M3U с памяти планшета</span>
+    </button>
+
+    <button class="modal-btn" id="btn-save">
+      Сохранить плейлист
+      <span class="sub">Скачать текущий M3U на планшет</span>
+    </button>
+
+    <div id="modal-url-form">
+      <input id="modal-url-input" type="url" placeholder="http://…" autocomplete="off" autocorrect="off" spellcheck="false">
+      <button id="modal-url-go">Загрузить</button>
+    </div>
+
+    <button id="modal-cancel">Закрыть</button>
+  </div>
+</div>
+
+<input id="file-input" type="file" accept=".m3u,.m3u8,text/plain">
+
 <script>
 (function() {
-  var sidebar = document.getElementById('sidebar');
-  var touchZone = document.getElementById('touch-zone');
+  var sidebar      = document.getElementById('sidebar');
+  var touchZone    = document.getElementById('touch-zone');
   var overlayClose = document.getElementById('overlay-close');
-  var channelList = document.getElementById('channel-list');
-  var searchInput = document.getElementById('search-input');
-  var player = document.getElementById('player');
-  var nowPlaying = document.getElementById('now-playing');
-  var chCount = document.getElementById('ch-count');
-  var hint = document.getElementById('hint');
-  var spinner = document.getElementById('spinner');
-  var loadBtn = document.getElementById('load-btn');
-  var playlistUrl = document.getElementById('playlist-url');
-  var uploadBtn = document.getElementById('upload-btn');
-  var fileInput = document.getElementById('file-input');
+  var channelList  = document.getElementById('channel-list');
+  var searchInput  = document.getElementById('search-input');
+  var player       = document.getElementById('player');
+  var nowPlaying   = document.getElementById('now-playing');
+  var chCount      = document.getElementById('ch-count');
+  var hint         = document.getElementById('hint');
+  var spinner      = document.getElementById('spinner');
+  var gearBtn      = document.getElementById('gear-btn');
+  var modalBg      = document.getElementById('modal-bg');
+  var modalCancel  = document.getElementById('modal-cancel');
+  var btnUrl       = document.getElementById('btn-url');
+  var btnFile      = document.getElementById('btn-file');
+  var btnSave      = document.getElementById('btn-save');
+  var urlForm      = document.getElementById('modal-url-form');
+  var urlInput     = document.getElementById('modal-url-input');
+  var urlGo        = document.getElementById('modal-url-go');
+  var fileInput    = document.getElementById('file-input');
 
-  var channels = [];
-  var filtered = [];
+  var channels    = [];
+  var filtered    = [];
   var activeIndex = -1;
-  var hideTimer = null;
+  var hideTimer   = null;
   var hlsInstance = null;
+  var rawM3U      = '';
 
-  // ─── SIDEBAR ───
+  // SIDEBAR
   function openSidebar() {
     sidebar.classList.add('open');
     clearTimeout(hideTimer);
     hideTimer = setTimeout(closeSidebar, 5000);
   }
-  function closeSidebar() {
-    sidebar.classList.remove('open');
-    clearTimeout(hideTimer);
-  }
+  function closeSidebar() { sidebar.classList.remove('open'); clearTimeout(hideTimer); }
 
-  touchZone.addEventListener('touchstart', function(e) {
-    openSidebar();
-    e.preventDefault();
-  }, { passive: false });
+  touchZone.addEventListener('touchstart', function(e) { openSidebar(); e.preventDefault(); }, { passive: false });
   touchZone.addEventListener('click', openSidebar);
   overlayClose.addEventListener('click', closeSidebar);
+  searchInput.addEventListener('focus', function() { clearTimeout(hideTimer); });
+  searchInput.addEventListener('blur', function() { hideTimer = setTimeout(closeSidebar, 5000); });
 
-  searchInput.addEventListener('focus', function() {
-    clearTimeout(hideTimer);
-  });
-  searchInput.addEventListener('blur', function() {
-    hideTimer = setTimeout(closeSidebar, 5000);
+  // MODAL
+  function openModal() {
+    urlForm.classList.remove('show');
+    modalBg.classList.add('open');
+    closeSidebar();
+  }
+  function closeModal() { modalBg.classList.remove('open'); }
+
+  gearBtn.addEventListener('click', openModal);
+  modalCancel.addEventListener('click', closeModal);
+  modalBg.addEventListener('click', function(e) { if (e.target === modalBg) closeModal(); });
+
+  btnUrl.addEventListener('click', function() {
+    urlForm.classList.toggle('show');
+    if (urlForm.classList.contains('show')) setTimeout(function() { urlInput.focus(); }, 100);
   });
 
-  // ─── PARSE M3U ───
+  urlGo.addEventListener('click', function() {
+    var url = urlInput.value.trim();
+    if (!url) return;
+    try { localStorage.setItem('iptv_playlist_url', url); } catch(e) {}
+    closeModal();
+    fetchPlaylist(url);
+  });
+  urlInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') urlGo.click(); });
+
+  btnFile.addEventListener('click', function() { fileInput.click(); });
+  fileInput.addEventListener('change', function() {
+    var file = this.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e) { rawM3U = e.target.result; closeModal(); loadChannels(rawM3U); };
+    reader.readAsText(file, 'UTF-8');
+    this.value = '';
+  });
+
+  btnSave.addEventListener('click', function() {
+    if (!rawM3U) { alert('Плейлист не загружен'); return; }
+    var blob = new Blob([rawM3U], { type: 'audio/x-mpegurl' });
+    var url  = URL.createObjectURL(blob);
+    var a    = document.createElement('a');
+    a.href = url; a.download = 'playlist.m3u'; a.click();
+    setTimeout(function() { URL.revokeObjectURL(url); }, 2000);
+    closeModal();
+  });
+
+  // PARSE M3U
   function parseM3U(text) {
-    var lines = text.split(/\r?\n/);
-    var result = [];
-    var current = null;
+    var lines = text.split(/\r?\n/), result = [], current = null;
     for (var i = 0; i < lines.length; i++) {
       var line = lines[i].trim();
       if (line.startsWith('#EXTINF')) {
         current = { name: '', logo: '', group: '', url: '' };
-        var nameMatch = line.match(/,(.+)$/);
-        if (nameMatch) current.name = nameMatch[1].trim();
-        var logoMatch = line.match(/tvg-logo="([^"]*)"/);
-        if (logoMatch) current.logo = logoMatch[1];
-        var groupMatch = line.match(/group-title="([^"]*)"/);
-        if (groupMatch) current.group = groupMatch[1];
+        var m = line.match(/,(.+)$/); if (m) current.name = m[1].trim();
+        m = line.match(/tvg-logo="([^"]*)"/); if (m) current.logo = m[1];
+        m = line.match(/group-title="([^"]*)"/); if (m) current.group = m[1];
       } else if (line && !line.startsWith('#') && current) {
-        current.url = line;
-        result.push(current);
-        current = null;
+        current.url = line; result.push(current); current = null;
       }
     }
     return result;
   }
 
-  function loadChannels(text, autoplay) {
+  function loadChannels(text) {
+    rawM3U = text;
     channels = parseM3U(text);
     filtered = channels.slice();
     searchInput.value = '';
     renderList();
     chCount.textContent = channels.length + ' каналов';
-    // сохраняем каналы в localStorage
     try { localStorage.setItem('iptv_channels', JSON.stringify(channels)); } catch(e) {}
-    if (channels.length > 0 && autoplay !== false) {
-      playChannel(0);
-    }
+    if (channels.length > 0) playChannel(0);
   }
 
-  // ─── RENDER ───
+  // RENDER
   function renderList() {
-    if (filtered.length === 0) {
-      channelList.innerHTML = '<div id="empty-msg">Ничего не найдено</div>';
-      return;
-    }
+    if (!filtered.length) { channelList.innerHTML = '<div id="empty-msg">Ничего не найдено</div>'; return; }
     var html = '';
     for (var i = 0; i < filtered.length; i++) {
-      var ch = filtered[i];
-      var isActive = channels.indexOf(ch) === activeIndex;
-      var logoHtml = ch.logo
-        ? '<img class="ch-logo" src="' + ch.logo + '" onerror="this.style.display=\'none\'">'
-        : '<div class="ch-logo-placeholder">TV</div>';
+      var ch = filtered[i], isActive = channels.indexOf(ch) === activeIndex;
+      var logo = ch.logo ? '<img class="ch-logo" src="' + ch.logo + '" onerror="this.style.display=\'none\'">' : '<div class="ch-logo-placeholder">TV</div>';
       html += '<div class="channel-item' + (isActive ? ' active' : '') + '" data-idx="' + i + '">'
-        + logoHtml
-        + '<div style="min-width:0">'
-        + '<div class="ch-name">' + escapeHtml(ch.name) + '</div>'
-        + (ch.group ? '<div class="ch-group">' + escapeHtml(ch.group) + '</div>' : '')
-        + '</div></div>';
+        + logo + '<div style="min-width:0"><div class="ch-name">' + esc(ch.name) + '</div>'
+        + (ch.group ? '<div class="ch-group">' + esc(ch.group) + '</div>' : '') + '</div></div>';
     }
     channelList.innerHTML = html;
   }
 
-  function escapeHtml(s) {
-    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
+  function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
   channelList.addEventListener('click', function(e) {
     var item = e.target.closest('.channel-item');
     if (!item) return;
-    var fi = parseInt(item.getAttribute('data-idx'));
-    var ch = filtered[fi];
-    var realIdx = channels.indexOf(ch);
-    playChannel(realIdx);
+    playChannel(channels.indexOf(filtered[parseInt(item.getAttribute('data-idx'))]));
     clearTimeout(hideTimer);
     hideTimer = setTimeout(closeSidebar, 3000);
   });
 
-  // ─── PLAY ───
+  // CHANNEL SWITCH
+  function nextChannel() { if (channels.length) playChannel((activeIndex + 1) % channels.length); }
+  function prevChannel() { if (channels.length) playChannel((activeIndex - 1 + channels.length) % channels.length); }
+
+  // SWIPE
+  var sy = 0, sx = 0, st = 0;
+  document.addEventListener('touchstart', function(e) {
+    if (sidebar.classList.contains('open') || modalBg.classList.contains('open')) return;
+    sy = e.touches[0].clientY; sx = e.touches[0].clientX; st = Date.now();
+  }, { passive: true });
+  document.addEventListener('touchend', function(e) {
+    if (sidebar.classList.contains('open') || modalBg.classList.contains('open')) return;
+    var dy = sy - e.changedTouches[0].clientY, dx = Math.abs(sx - e.changedTouches[0].clientX);
+    if (Math.abs(dy) > 60 && Date.now() - st < 600 && dx < Math.abs(dy)) {
+      if (dy > 0) nextChannel(); else prevChannel();
+    }
+  }, { passive: true });
+
+  // KEYS
+  document.addEventListener('keydown', function(e) {
+    switch(e.keyCode) {
+      case 38: case 33: prevChannel(); break;
+      case 40: case 34: nextChannel(); break;
+      case 37: prevChannel(); break;
+      case 39: nextChannel(); break;
+      case 166: case 8: e.preventDefault(); prevChannel(); break;
+      case 167: nextChannel(); break;
+    }
+  });
+
+  // PLAY
   function playChannel(idx) {
     if (idx < 0 || idx >= channels.length) return;
     activeIndex = idx;
@@ -448,15 +376,11 @@
     spinner.style.display = 'flex';
     renderList();
 
-    var url = ch.url;
-
-    // destroy old HLS
     if (hlsInstance) { try { hlsInstance.destroy(); } catch(e){} hlsInstance = null; }
-
-    // try native first (Android WebView handles many HLS streams)
-    player.src = '';
+    player.removeAttribute('src');
     player.load();
 
+    var url = ch.url;
     var isHLS = url.indexOf('.m3u8') !== -1 || url.indexOf('.m3u') !== -1;
     var canNative = player.canPlayType('application/vnd.apple.mpegurl') || player.canPlayType('application/x-mpegurl');
 
@@ -464,8 +388,8 @@
       hlsInstance = new Hls({ enableWorker: false, lowLatencyMode: true });
       hlsInstance.loadSource(url);
       hlsInstance.attachMedia(player);
-      hlsInstance.on(Hls.Events.MANIFEST_PARSED, function() { player.play(); spinner.style.display='none'; });
-      hlsInstance.on(Hls.Events.ERROR, function(e, d) { if (d.fatal) { spinner.style.display='none'; nowPlaying.textContent += ' [ошибка]'; } });
+      hlsInstance.on(Hls.Events.MANIFEST_PARSED, function() { player.play(); spinner.style.display = 'none'; });
+      hlsInstance.on(Hls.Events.ERROR, function(e, d) { if (d.fatal) { spinner.style.display = 'none'; nowPlaying.textContent += ' [ошибка]'; }});
     } else {
       player.src = url;
       player.play().catch(function(){});
@@ -474,156 +398,60 @@
 
   player.addEventListener('playing', function() { spinner.style.display = 'none'; });
   player.addEventListener('waiting', function() { spinner.style.display = 'flex'; });
-  player.addEventListener('error', function() { spinner.style.display = 'none'; });
+  player.addEventListener('error',   function() { spinner.style.display = 'none'; });
 
-  // ─── CHANNEL SWITCH ───
-  function nextChannel() {
-    if (channels.length === 0) return;
-    playChannel((activeIndex + 1) % channels.length);
-  }
-  function prevChannel() {
-    if (channels.length === 0) return;
-    playChannel((activeIndex - 1 + channels.length) % channels.length);
-  }
-
-  // ─── SWIPE UP/DOWN ───
-  var swipeStartY = 0;
-  var swipeStartX = 0;
-  var swipeStartTime = 0;
-
-  document.addEventListener('touchstart', function(e) {
-    if (sidebar.classList.contains('open')) return;
-    swipeStartY = e.touches[0].clientY;
-    swipeStartX = e.touches[0].clientX;
-    swipeStartTime = Date.now();
-  }, { passive: true });
-
-  document.addEventListener('touchend', function(e) {
-    if (sidebar.classList.contains('open')) return;
-    var dy = swipeStartY - e.changedTouches[0].clientY;
-    var dx = Math.abs(swipeStartX - e.changedTouches[0].clientX);
-    var dt = Date.now() - swipeStartTime;
-    if (Math.abs(dy) > 60 && dt < 600 && dx < Math.abs(dy)) {
-      if (dy > 0) nextChannel(); else prevChannel();
-    }
-  }, { passive: true });
-
-  // ─── ФИЗИЧЕСКИЕ КНОПКИ ───
-  document.addEventListener('keydown', function(e) {
-    switch(e.keyCode) {
-      case 38: case 33: prevChannel(); break;  // вверх / PageUp
-      case 40: case 34: nextChannel(); break;  // вниз / PageDown
-      case 37: prevChannel(); break;           // влево
-      case 39: nextChannel(); break;           // вправо
-      case 166: case 8:                        // кнопка "назад" Android
-        e.preventDefault(); prevChannel(); break;
-      case 167: nextChannel(); break;          // кнопка "вперёд" Android
-    }
-  });
-
-  // ─── SEARCH ───
+  // SEARCH
   searchInput.addEventListener('input', function() {
     var q = this.value.toLowerCase().trim();
     filtered = q ? channels.filter(function(c) { return c.name.toLowerCase().indexOf(q) !== -1 || c.group.toLowerCase().indexOf(q) !== -1; }) : channels.slice();
     renderList();
   });
 
-  // ─── LOAD URL ───
-  loadBtn.addEventListener('click', function() {
-    var url = playlistUrl.value.trim();
-    if (!url) return;
-    fetchPlaylist(url);
-  });
-
-  playlistUrl.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') loadBtn.click();
-  });
-
+  // FETCH
   function fetchPlaylist(url) {
     spinner.style.display = 'flex';
-    // try direct fetch, then CORS proxy
     fetch(url)
-      .then(function(r) { if (!r.ok) throw new Error('HTTP '+r.status); return r.text(); })
-      .then(function(text) { spinner.style.display='none'; loadChannels(text); })
+      .then(function(r) { if (!r.ok) throw 0; return r.text(); })
+      .then(function(t) { spinner.style.display = 'none'; loadChannels(t); })
       .catch(function() {
-        var proxy = 'https://corsproxy.io/?' + encodeURIComponent(url);
-        fetch(proxy)
+        fetch('https://corsproxy.io/?' + encodeURIComponent(url))
           .then(function(r) { return r.text(); })
-          .then(function(text) { spinner.style.display='none'; loadChannels(text); })
-          .catch(function() { spinner.style.display='none'; alert('Не удалось загрузить плейлист. Попробуй файл.'); });
+          .then(function(t) { spinner.style.display = 'none'; loadChannels(t); })
+          .catch(function() { spinner.style.display = 'none'; alert('Не удалось загрузить. Попробуй файл.'); });
       });
   }
 
-  // ─── LOAD FILE ───
-  uploadBtn.addEventListener('click', function() { fileInput.click(); });
-  fileInput.addEventListener('change', function() {
-    var file = this.files[0];
-    if (!file) return;
-    var reader = new FileReader();
-    reader.onload = function(e) { loadChannels(e.target.result); };
-    reader.readAsText(file, 'UTF-8');
-    this.value = '';
-  });
-
-  // ─── FULLSCREEN / IMMERSIVE ───
+  // FULLSCREEN
   function tryFullscreen() {
     var el = document.documentElement;
     var req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
     if (req) { try { req.call(el); } catch(e) {} }
-    if (screen.orientation && screen.orientation.lock) {
-      screen.orientation.lock('landscape').catch(function(){});
-    }
-    // Android immersive mode via Android interface (GoNative / некоторые WebView)
-    try { if (window.Android && window.Android.setImmersive) window.Android.setImmersive(true); } catch(e){}
+    if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(function(){});
   }
+  setInterval(function() { if (!document.fullscreenElement && !document.webkitFullscreenElement) tryFullscreen(); }, 2000);
+  document.addEventListener('touchstart', function() { tryFullscreen(); }, { once: true, passive: true });
 
-  // Повторяем каждые 2 сек чтобы статус-бар не вылезал обратно
-  function keepFullscreen() {
-    var d = document;
-    if (!d.fullscreenElement && !d.webkitFullscreenElement) {
-      tryFullscreen();
-    }
-  }
-  setInterval(keepFullscreen, 2000);
+  // HLS.JS
+  var s = document.createElement('script');
+  s.src = 'https://cdn.jsdelivr.net/npm/hls.js@1.4.12/dist/hls.min.js';
+  s.async = true; document.head.appendChild(s);
 
-  var fsTriggered = false;
-  document.addEventListener('touchstart', function() {
-    if (!fsTriggered) { fsTriggered = true; tryFullscreen(); }
-  }, { once: true, passive: true });
-  document.addEventListener('click', function() {
-    if (!fsTriggered) { fsTriggered = true; tryFullscreen(); }
-  }, { once: true });
-
-  // ─── HLS.JS (optional lazy load) ───
-  var hlsScript = document.createElement('script');
-  hlsScript.src = 'https://cdn.jsdelivr.net/npm/hls.js@1.4.12/dist/hls.min.js';
-  hlsScript.async = true;
-  document.head.appendChild(hlsScript);
-
-  // ─── SAVED PLAYLIST ───
+  // RESTORE
   try {
     var savedUrl = localStorage.getItem('iptv_playlist_url');
-    if (savedUrl) { playlistUrl.value = savedUrl; }
-
-    var savedChannels = localStorage.getItem('iptv_channels');
-    var savedIdx = parseInt(localStorage.getItem('iptv_last_idx') || '0');
-    if (savedChannels) {
-      channels = JSON.parse(savedChannels);
+    if (savedUrl) urlInput.value = savedUrl;
+    var savedCh = localStorage.getItem('iptv_channels');
+    if (savedCh) {
+      channels = JSON.parse(savedCh);
       filtered = channels.slice();
       renderList();
       chCount.textContent = channels.length + ' каналов';
       hint.classList.add('hidden');
-      // автозапуск последнего канала
-      if (channels.length > 0) {
-        activeIndex = savedIdx < channels.length ? savedIdx : 0;
-        playChannel(activeIndex);
-      }
+      var lastIdx = parseInt(localStorage.getItem('iptv_last_idx') || '0');
+      activeIndex = lastIdx < channels.length ? lastIdx : 0;
+      if (channels.length > 0) playChannel(activeIndex);
     }
   } catch(e) {}
-
-  loadBtn.addEventListener('click', function() {
-    try { localStorage.setItem('iptv_playlist_url', playlistUrl.value.trim()); } catch(e){}
-  });
 
 })();
 </script>
