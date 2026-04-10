@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>IPTV</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    width: 100%; height: 100%;
+    background: #000;
+    overflow: hidden;
+    font-family: 'Courier New', monospace;
+  }
+
+  #app {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: #000;
+  }
+
+  video {
+    width: 100%; height: 100%;
+    object-fit: contain;
+    background: #000;
+    display: block;
+  }
+
+  /* ─── SIDEBAR ─── */
+  #sidebar {
+    position: fixed;
+    top: 0; left: 0;
+    width: 300px;
+    height: 100%;
+    background: rgba(0,0,0,0.92);
+    border-right: 1px solid #333;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  #sidebar.open { transform: translateX(0); }
+
+  #sidebar-header {
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid #222;
+    flex-shrink: 0;
+  }
+  #sidebar-title {
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    color: #888;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  /* playlist selector */
+  #playlist-input-wrap {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  #playlist-url {
+    flex: 1;
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 4px;
+    color: #eee;
+    font-size: 12px;
+    padding: 6px 8px;
+    outline: none;
+    font-family: inherit;
+    min-width: 0;
+  }
+  #playlist-url::placeholder { color: #555; }
+  #playlist-url:focus { border-color: #666; }
+
+  #load-btn {
+    background: #222;
+    border: 1px solid #444;
+    border-radius: 4px;
+    color: #ccc;
+    font-size: 11px;
+    padding: 6px 10px;
+    cursor: pointer;
+    white-space: nowrap;
+    font-family: inherit;
+  }
+  #load-btn:active { background: #333; }
+
+  #upload-btn {
+    width: 100%;
+    background: #111;
+    border: 1px dashed #444;
+    border-radius: 4px;
+    color: #777;
+    font-size: 11px;
+    padding: 6px;
+    cursor: pointer;
+    text-align: center;
+    font-family: inherit;
+  }
+  #upload-btn:active { color: #aaa; border-color: #666; }
+  #file-input { display: none; }
+
+  /* search */
+  #search-wrap {
+    padding: 8px 12px;
+    border-bottom: 1px solid #1a1a1a;
+    flex-shrink: 0;
+  }
+  #search-input {
+    width: 100%;
+    background: #111;
+    border: 1px solid #2a2a2a;
+    border-radius: 4px;
+    color: #ddd;
+    font-size: 13px;
+    padding: 6px 10px;
+    outline: none;
+    font-family: inherit;
+  }
+  #search-input::placeholder { color: #444; }
+  #search-input:focus { border-color: #555; }
+
+  /* channel list */
+  #channel-list {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  #channel-list::-webkit-scrollbar { width: 3px; }
+  #channel-list::-webkit-scrollbar-track { background: #111; }
+  #channel-list::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+
+  .channel-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    cursor: pointer;
+    border-bottom: 1px solid #111;
+    transition: background 0.1s;
+    user-select: none;
+  }
+  .channel-item:active { background: #1a1a1a; }
+  .channel-item.active { background: #1c1c1c; border-left: 3px solid #e50914; }
+  .channel-item.active .ch-name { color: #fff; }
+
+  .ch-logo {
+    width: 32px; height: 22px;
+    object-fit: contain;
+    flex-shrink: 0;
+    border-radius: 2px;
+    background: #111;
+  }
+  .ch-logo-placeholder {
+    width: 32px; height: 22px;
+    background: #1a1a1a;
+    border-radius: 2px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    color: #333;
+  }
+
+  .ch-name {
+    font-size: 13px;
+    color: #aaa;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.3;
+  }
+  .ch-group {
+    font-size: 10px;
+    color: #444;
+    margin-top: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* empty / status */
+  #empty-msg {
+    padding: 24px 16px;
+    text-align: center;
+    color: #444;
+    font-size: 12px;
+    line-height: 1.8;
+  }
+
+  /* ─── TOUCH ZONE ─── */
+  #touch-zone {
+    position: fixed;
+    top: 0; left: 0;
+    width: 80px; height: 100%;
+    z-index: 50;
+  }
+
+  /* ─── STATUS BAR ─── */
+  #status-bar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    padding: 8px 16px;
+    background: linear-gradient(transparent, rgba(0,0,0,0.7));
+    color: #777;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    pointer-events: none;
+    z-index: 10;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+  #now-playing { color: #aaa; max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* ─── OVERLAY HINT ─── */
+  #hint {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #333;
+    font-size: 13px;
+    letter-spacing: 0.05em;
+    pointer-events: none;
+    z-index: 5;
+    line-height: 2;
+  }
+  #hint.hidden { display: none; }
+
+  /* loading spinner */
+  #spinner {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 20;
+    pointer-events: none;
+    display: none;
+  }
+  .spin {
+    width: 32px; height: 32px;
+    border: 2px solid #333;
+    border-top-color: #e50914;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  #overlay-close {
+    position: fixed;
+    top: 0; left: 300px; right: 0; bottom: 0;
+    z-index: 99;
+    display: none;
+  }
+  #sidebar.open ~ #overlay-close { display: block; }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <video id="player" autoplay playsinline></video>
+</div>
+
+<div id="spinner"><div class="spin"></div></div>
+
+<div id="hint">
+  <div>← тап слева — каналы</div>
+  <div>загрузи плейлист M3U</div>
+</div>
+
+<div id="status-bar">
+  <div id="now-playing"></div>
+  <div id="ch-count"></div>
+</div>
+
+<!-- touch zone for sidebar -->
+<div id="touch-zone"></div>
+
+<!-- sidebar -->
+<div id="sidebar">
+  <div id="sidebar-header">
+    <div id="sidebar-title">IPTV Player</div>
+    <div id="playlist-input-wrap">
+      <input id="playlist-url" type="url" placeholder="http://… URL плейлиста" autocomplete="off" autocorrect="off" spellcheck="false">
+      <button id="load-btn">Загрузить</button>
+    </div>
+    <button id="upload-btn">📂 Открыть файл M3U</button>
+    <input id="file-input" type="file" accept=".m3u,.m3u8,text/plain">
+  </div>
+
+  <div id="search-wrap">
+    <input id="search-input" type="search" placeholder="Поиск канала…" autocomplete="off">
+  </div>
+
+  <div id="channel-list"><div id="empty-msg">Загрузи плейлист M3U<br>или введи URL выше</div></div>
+</div>
+
+<div id="overlay-close"></div>
+
+<script>
+(function() {
+  var sidebar = document.getElementById('sidebar');
+  var touchZone = document.getElementById('touch-zone');
+  var overlayClose = document.getElementById('overlay-close');
+  var channelList = document.getElementById('channel-list');
+  var searchInput = document.getElementById('search-input');
+  var player = document.getElementById('player');
+  var nowPlaying = document.getElementById('now-playing');
+  var chCount = document.getElementById('ch-count');
+  var hint = document.getElementById('hint');
+  var spinner = document.getElementById('spinner');
+  var loadBtn = document.getElementById('load-btn');
+  var playlistUrl = document.getElementById('playlist-url');
+  var uploadBtn = document.getElementById('upload-btn');
+  var fileInput = document.getElementById('file-input');
+
+  var channels = [];
+  var filtered = [];
+  var activeIndex = -1;
+  var hideTimer = null;
+  var hlsInstance = null;
+
+  // ─── SIDEBAR ───
+  function openSidebar() {
+    sidebar.classList.add('open');
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(closeSidebar, 5000);
+  }
+  function closeSidebar() {
+    sidebar.classList.remove('open');
+    clearTimeout(hideTimer);
+  }
+
+  touchZone.addEventListener('touchstart', function(e) {
+    openSidebar();
+    e.preventDefault();
+  }, { passive: false });
+  touchZone.addEventListener('click', openSidebar);
+  overlayClose.addEventListener('click', closeSidebar);
+
+  searchInput.addEventListener('focus', function() {
+    clearTimeout(hideTimer);
+  });
+  searchInput.addEventListener('blur', function() {
+    hideTimer = setTimeout(closeSidebar, 5000);
+  });
+
+  // ─── PARSE M3U ───
+  function parseM3U(text) {
+    var lines = text.split(/\r?\n/);
+    var result = [];
+    var current = null;
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i].trim();
+      if (line.startsWith('#EXTINF')) {
+        current = { name: '', logo: '', group: '', url: '' };
+        var nameMatch = line.match(/,(.+)$/);
+        if (nameMatch) current.name = nameMatch[1].trim();
+        var logoMatch = line.match(/tvg-logo="([^"]*)"/);
+        if (logoMatch) current.logo = logoMatch[1];
+        var groupMatch = line.match(/group-title="([^"]*)"/);
+        if (groupMatch) current.group = groupMatch[1];
+      } else if (line && !line.startsWith('#') && current) {
+        current.url = line;
+        result.push(current);
+        current = null;
+      }
+    }
+    return result;
+  }
+
+  function loadChannels(text) {
+    channels = parseM3U(text);
+    filtered = channels.slice();
+    searchInput.value = '';
+    renderList();
+    chCount.textContent = channels.length + ' каналов';
+    if (channels.length > 0) {
+      playChannel(0);
+    }
+  }
+
+  // ─── RENDER ───
+  function renderList() {
+    if (filtered.length === 0) {
+      channelList.innerHTML = '<div id="empty-msg">Ничего не найдено</div>';
+      return;
+    }
+    var html = '';
+    for (var i = 0; i < filtered.length; i++) {
+      var ch = filtered[i];
+      var isActive = channels.indexOf(ch) === activeIndex;
+      var logoHtml = ch.logo
+        ? '<img class="ch-logo" src="' + ch.logo + '" onerror="this.style.display=\'none\'">'
+        : '<div class="ch-logo-placeholder">TV</div>';
+      html += '<div class="channel-item' + (isActive ? ' active' : '') + '" data-idx="' + i + '">'
+        + logoHtml
+        + '<div style="min-width:0">'
+        + '<div class="ch-name">' + escapeHtml(ch.name) + '</div>'
+        + (ch.group ? '<div class="ch-group">' + escapeHtml(ch.group) + '</div>' : '')
+        + '</div></div>';
+    }
+    channelList.innerHTML = html;
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  channelList.addEventListener('click', function(e) {
+    var item = e.target.closest('.channel-item');
+    if (!item) return;
+    var fi = parseInt(item.getAttribute('data-idx'));
+    var ch = filtered[fi];
+    var realIdx = channels.indexOf(ch);
+    playChannel(realIdx);
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(closeSidebar, 3000);
+  });
+
+  // ─── PLAY ───
+  function playChannel(idx) {
+    if (idx < 0 || idx >= channels.length) return;
+    activeIndex = idx;
+    var ch = channels[idx];
+    nowPlaying.textContent = ch.name;
+    hint.classList.add('hidden');
+    spinner.style.display = 'flex';
+    renderList();
+
+    var url = ch.url;
+
+    // destroy old HLS
+    if (hlsInstance) { try { hlsInstance.destroy(); } catch(e){} hlsInstance = null; }
+
+    // try native first (Android WebView handles many HLS streams)
+    player.src = '';
+    player.load();
+
+    var isHLS = url.indexOf('.m3u8') !== -1 || url.indexOf('.m3u') !== -1;
+    var canNative = player.canPlayType('application/vnd.apple.mpegurl') || player.canPlayType('application/x-mpegurl');
+
+    if (isHLS && !canNative && typeof Hls !== 'undefined' && Hls.isSupported()) {
+      hlsInstance = new Hls({ enableWorker: false, lowLatencyMode: true });
+      hlsInstance.loadSource(url);
+      hlsInstance.attachMedia(player);
+      hlsInstance.on(Hls.Events.MANIFEST_PARSED, function() { player.play(); spinner.style.display='none'; });
+      hlsInstance.on(Hls.Events.ERROR, function(e, d) { if (d.fatal) { spinner.style.display='none'; nowPlaying.textContent += ' [ошибка]'; } });
+    } else {
+      player.src = url;
+      player.play().catch(function(){});
+    }
+  }
+
+  player.addEventListener('playing', function() { spinner.style.display = 'none'; });
+  player.addEventListener('waiting', function() { spinner.style.display = 'flex'; });
+  player.addEventListener('error', function() { spinner.style.display = 'none'; });
+
+  // ─── SEARCH ───
+  searchInput.addEventListener('input', function() {
+    var q = this.value.toLowerCase().trim();
+    filtered = q ? channels.filter(function(c) { return c.name.toLowerCase().indexOf(q) !== -1 || c.group.toLowerCase().indexOf(q) !== -1; }) : channels.slice();
+    renderList();
+  });
+
+  // ─── LOAD URL ───
+  loadBtn.addEventListener('click', function() {
+    var url = playlistUrl.value.trim();
+    if (!url) return;
+    fetchPlaylist(url);
+  });
+
+  playlistUrl.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') loadBtn.click();
+  });
+
+  function fetchPlaylist(url) {
+    spinner.style.display = 'flex';
+    // try direct fetch, then CORS proxy
+    fetch(url)
+      .then(function(r) { if (!r.ok) throw new Error('HTTP '+r.status); return r.text(); })
+      .then(function(text) { spinner.style.display='none'; loadChannels(text); })
+      .catch(function() {
+        var proxy = 'https://corsproxy.io/?' + encodeURIComponent(url);
+        fetch(proxy)
+          .then(function(r) { return r.text(); })
+          .then(function(text) { spinner.style.display='none'; loadChannels(text); })
+          .catch(function() { spinner.style.display='none'; alert('Не удалось загрузить плейлист. Попробуй файл.'); });
+      });
+  }
+
+  // ─── LOAD FILE ───
+  uploadBtn.addEventListener('click', function() { fileInput.click(); });
+  fileInput.addEventListener('change', function() {
+    var file = this.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e) { loadChannels(e.target.result); };
+    reader.readAsText(file, 'UTF-8');
+    this.value = '';
+  });
+
+  // ─── FULLSCREEN ───
+  function tryFullscreen() {
+    var el = document.documentElement;
+    var req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+    if (req) { try { req.call(el); } catch(e) {} }
+    // Screen orientation lock for landscape
+    if (screen.orientation && screen.orientation.lock) {
+      screen.orientation.lock('landscape').catch(function(){});
+    }
+  }
+
+  // Try fullscreen on first touch (required by browsers)
+  var fsTriggered = false;
+  document.addEventListener('touchstart', function() {
+    if (!fsTriggered) { fsTriggered = true; tryFullscreen(); }
+  }, { once: true, passive: true });
+  document.addEventListener('click', function() {
+    if (!fsTriggered) { fsTriggered = true; tryFullscreen(); }
+  }, { once: true });
+
+  // ─── HLS.JS (optional lazy load) ───
+  var hlsScript = document.createElement('script');
+  hlsScript.src = 'https://cdn.jsdelivr.net/npm/hls.js@1.4.12/dist/hls.min.js';
+  hlsScript.async = true;
+  document.head.appendChild(hlsScript);
+
+  // ─── SAVED PLAYLIST ───
+  try {
+    var saved = localStorage.getItem('iptv_playlist_url');
+    if (saved) { playlistUrl.value = saved; }
+  } catch(e) {}
+
+  loadBtn.addEventListener('click', function() {
+    try { localStorage.setItem('iptv_playlist_url', playlistUrl.value.trim()); } catch(e){}
+  });
+
+})();
+</script>
+</body>
+</html>
