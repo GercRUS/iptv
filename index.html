@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>IPTV</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -515,18 +517,27 @@
     this.value = '';
   });
 
-  // ─── FULLSCREEN ───
+  // ─── FULLSCREEN / IMMERSIVE ───
   function tryFullscreen() {
     var el = document.documentElement;
     var req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
     if (req) { try { req.call(el); } catch(e) {} }
-    // Screen orientation lock for landscape
     if (screen.orientation && screen.orientation.lock) {
       screen.orientation.lock('landscape').catch(function(){});
     }
+    // Android immersive mode via Android interface (GoNative / некоторые WebView)
+    try { if (window.Android && window.Android.setImmersive) window.Android.setImmersive(true); } catch(e){}
   }
 
-  // Try fullscreen on first touch (required by browsers)
+  // Повторяем каждые 2 сек чтобы статус-бар не вылезал обратно
+  function keepFullscreen() {
+    var d = document;
+    if (!d.fullscreenElement && !d.webkitFullscreenElement) {
+      tryFullscreen();
+    }
+  }
+  setInterval(keepFullscreen, 2000);
+
   var fsTriggered = false;
   document.addEventListener('touchstart', function() {
     if (!fsTriggered) { fsTriggered = true; tryFullscreen(); }
