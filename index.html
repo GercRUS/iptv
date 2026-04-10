@@ -386,13 +386,15 @@
     return result;
   }
 
-  function loadChannels(text) {
+  function loadChannels(text, autoplay) {
     channels = parseM3U(text);
     filtered = channels.slice();
     searchInput.value = '';
     renderList();
     chCount.textContent = channels.length + ' каналов';
-    if (channels.length > 0) {
+    // сохраняем каналы в localStorage
+    try { localStorage.setItem('iptv_channels', JSON.stringify(channels)); } catch(e) {}
+    if (channels.length > 0 && autoplay !== false) {
       playChannel(0);
     }
   }
@@ -439,6 +441,7 @@
   function playChannel(idx) {
     if (idx < 0 || idx >= channels.length) return;
     activeIndex = idx;
+    try { localStorage.setItem('iptv_last_idx', idx); } catch(e) {}
     var ch = channels[idx];
     nowPlaying.textContent = ch.name;
     hint.classList.add('hidden');
@@ -472,6 +475,51 @@
   player.addEventListener('playing', function() { spinner.style.display = 'none'; });
   player.addEventListener('waiting', function() { spinner.style.display = 'flex'; });
   player.addEventListener('error', function() { spinner.style.display = 'none'; });
+
+  // ─── CHANNEL SWITCH ───
+  function nextChannel() {
+    if (channels.length === 0) return;
+    playChannel((activeIndex + 1) % channels.length);
+  }
+  function prevChannel() {
+    if (channels.length === 0) return;
+    playChannel((activeIndex - 1 + channels.length) % channels.length);
+  }
+
+  // ─── SWIPE UP/DOWN ───
+  var swipeStartY = 0;
+  var swipeStartX = 0;
+  var swipeStartTime = 0;
+
+  document.addEventListener('touchstart', function(e) {
+    if (sidebar.classList.contains('open')) return;
+    swipeStartY = e.touches[0].clientY;
+    swipeStartX = e.touches[0].clientX;
+    swipeStartTime = Date.now();
+  }, { passive: true });
+
+  document.addEventListener('touchend', function(e) {
+    if (sidebar.classList.contains('open')) return;
+    var dy = swipeStartY - e.changedTouches[0].clientY;
+    var dx = Math.abs(swipeStartX - e.changedTouches[0].clientX);
+    var dt = Date.now() - swipeStartTime;
+    if (Math.abs(dy) > 60 && dt < 600 && dx < Math.abs(dy)) {
+      if (dy > 0) nextChannel(); else prevChannel();
+    }
+  }, { passive: true });
+
+  // ─── ФИЗИЧЕСКИЕ КНОПКИ ───
+  document.addEventListener('keydown', function(e) {
+    switch(e.keyCode) {
+      case 38: case 33: prevChannel(); break;  // вверх / PageUp
+      case 40: case 34: nextChannel(); break;  // вниз / PageDown
+      case 37: prevChannel(); break;           // влево
+      case 39: nextChannel(); break;           // вправо
+      case 166: case 8:                        // кнопка "назад" Android
+        e.preventDefault(); prevChannel(); break;
+      case 167: nextChannel(); break;          // кнопка "вперёд" Android
+    }
+  });
 
   // ─── SEARCH ───
   searchInput.addEventListener('input', function() {
@@ -554,8 +602,23 @@
 
   // ─── SAVED PLAYLIST ───
   try {
-    var saved = localStorage.getItem('iptv_playlist_url');
-    if (saved) { playlistUrl.value = saved; }
+    var savedUrl = localStorage.getItem('iptv_playlist_url');
+    if (savedUrl) { playlistUrl.value = savedUrl; }
+
+    var savedChannels = localStorage.getItem('iptv_channels');
+    var savedIdx = parseInt(localStorage.getItem('iptv_last_idx') || '0');
+    if (savedChannels) {
+      channels = JSON.parse(savedChannels);
+      filtered = channels.slice();
+      renderList();
+      chCount.textContent = channels.length + ' каналов';
+      hint.classList.add('hidden');
+      // автозапуск последнего канала
+      if (channels.length > 0) {
+        activeIndex = savedIdx < channels.length ? savedIdx : 0;
+        playChannel(activeIndex);
+      }
+    }
   } catch(e) {}
 
   loadBtn.addEventListener('click', function() {
