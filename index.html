@@ -131,6 +131,24 @@
 </style>
 </head>
 <body>
+ <script>
+  // Ловим все ошибки и показываем на экране
+  window.onerror = function(msg, url, line, col, error) {
+    var errorDiv = document.createElement('div');
+    errorDiv.style.cssText = 'position:fixed; bottom:0; left:0; right:0; background:red; color:white; padding:10px; z-index:9999; font-size:12px; word-break:break-all;';
+    errorDiv.innerHTML = 'ОШИБКА: ' + msg + '<br>строка: ' + line;
+    document.body.appendChild(errorDiv);
+    console.error(msg, error);
+    return false;
+  };
+  
+  // Проверка поддержки критических API
+  console.log('=== ДИАГНОСТИКА ===');
+  console.log('MediaSource:', 'MediaSource' in window || 'WebKitMediaSource' in window);
+  console.log('Hls:', typeof Hls !== 'undefined');
+  console.log('Video:', !!document.createElement('video').canPlayType);
+  console.log('UserAgent:', navigator.userAgent);
+</script>
 
 <div id="app">
   <video id="player" autoplay playsinline webkit-playsinline></video>
