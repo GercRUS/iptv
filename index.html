@@ -431,10 +431,11 @@
   setInterval(function() { if (!document.fullscreenElement && !document.webkitFullscreenElement) tryFullscreen(); }, 2000);
   document.addEventListener('touchstart', function() { tryFullscreen(); }, { once: true, passive: true });
 
-  // HLS.JS
+// HLS.JS - стабильная версия для Android 8
   var s = document.createElement('script');
-  s.src = 'https://cdn.jsdelivr.net/npm/hls.js@1.4.12/dist/hls.min.js';
-  s.async = true; document.head.appendChild(s);
+  s.src = 'https://cdn.jsdelivr.net/npm/hls.js@0.14.17/dist/hls.min.js';
+  s.async = true; 
+  document.head.appendChild(s);
 
   // RESTORE
   try {
